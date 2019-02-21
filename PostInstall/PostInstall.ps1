@@ -9,8 +9,11 @@ if((Test-Path -Path $env:USERPROFILE\AppData\Roaming\ParsecLoader) -eq $true) {}
 if((Test-Path -Path "$path\Auto Login") -eq $true) {} Else {New-Item -path "$path\Auto Login" -ItemType Directory | Out-Null}
 if((Test-Path C:\Windows\system32\GroupPolicy\Machine\Scripts\psscripts.ini) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\psscripts.ini -Destination C:\Windows\system32\GroupPolicy\Machine\Scripts}
 if((Test-Path C:\Windows\system32\GroupPolicy\Machine\Scripts\Shutdown\NetworkRestore.ps1) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\NetworkRestore.ps1 -Destination C:\Windows\system32\GroupPolicy\Machine\Scripts\Shutdown} 
-#if((Test-Path C:\Windows\system32\GroupPolicy\Machine\Scripts\Startup\clear-proxy.ps1) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\clear-proxy.ps1 -Destination C:\Windows\system32\GroupPolicy\Machine\Scripts\Startup}
-if((Test-Path $path\ParsecTemp\PreInstall\GPU-Update.ico) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\GPU-Update.ico -Destination $env:USERPROFILE\AppData\Roaming\ParsecLoader}
+if((Test-Path $ENV:APPDATA\ParsecLoader\clear-proxy.ps1) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\clear-proxy.ps1 -Destination $ENV:APPDATA\ParsecLoader}
+if((Test-Path $ENV:APPDATA\ParsecLoader\CreateClearProxyScheduledTask.ps1) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\CreateClearProxyScheduledTask.ps1 -Destination $ENV:APPDATA\ParsecLoader}
+if((Test-Path $ENV:APPDATA\ParsecLoader\Automatic-Shutdown.ps1) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\Automatic-Shutdown.ps1 -Destination $ENV:APPDATA\ParsecLoader}
+if((Test-Path $ENV:APPDATA\ParsecLoader\CreateAutomaticShutdownScheduledTask.ps1) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\CreateAutomaticShutdownScheduledTask.ps1 -Destination $ENV:APPDATA\ParsecLoader}
+if((Test-Path $ENV:APPDATA\ParsecLoader\GPU-Update.ico) -eq $true) {} Else {Move-Item -Path $path\ParsecTemp\PreInstall\GPU-Update.ico -Destination $ENV:APPDATA\ParsecLoader}
 }
 
 
@@ -24,12 +27,12 @@ write-output "Adding modifications to GPT.ini"
 $gptstring = get-content C:\Windows\System32\GroupPolicy\gpt.ini
 $gpoversion = $gptstring -match "Version"
 $GPO = $gptstring -match "gPCMachineExtensionNames"
-$add = '[{42B5FAAE-6536-11D2-AE5A-0000F87571E3}{40B6664F-4972-11D1-A7CA-0000F87571E3}][{42B5FAAE-6536-11D2-AE5A-0000F87571E3}{40B6664F-4972-11D1-A7CA-0000F87571E3}]'
+$add = '[{42B5FAAE-6536-11D2-AE5A-0000F87571E3}{40B6664F-4972-11D1-A7CA-0000F87571E3}]'
 $replace = "$GPO" + "$add"
 (Get-Content "C:\Windows\System32\GroupPolicy\gpt.ini").Replace("$GPO","$replace") | Set-Content "C:\Windows\System32\GroupPolicy\gpt.ini"
 [int]$i = $gpoversion.trim("Version=") 
 [int]$n = $gpoversion.trim("Version=")
-$n +=4
+$n +=2
 (Get-Content C:\Windows\System32\GroupPolicy\gpt.ini) -replace "Version=$i", "Version=$n" | Set-Content C:\Windows\System32\GroupPolicy\gpt.ini}
 else{write-output "Not Required"}
 }
@@ -233,9 +236,22 @@ $ShortCut.Save()
 function Create-ClearProxy-Shortcut{
 Write-Output "Create ClearProxy shortcut"
 $Shell = New-Object -ComObject ("WScript.Shell")
-$ShortCut = $Shell.CreateShortcut("$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\Clear-Proxy.lnk")
+$ShortCut = $Shell.CreateShortcut("$env:USERPROFILE\Desktop\Auto Recover GPU.lnk")
 $ShortCut.TargetPath="powershell.exe"
-$ShortCut.Arguments='-windowstyle hidden -ExecutionPolicy Bypass -File "%homepath%\AppData\Roaming\ParsecLoader\Clear-Proxy.ps1"'
+$ShortCut.Arguments='-ExecutionPolicy Bypass -File "%homepath%\AppData\Roaming\ParsecLoader\CreateClearProxyScheduledTask.ps1"'
+$ShortCut.WorkingDirectory = "$env:USERPROFILE\AppData\Roaming\ParsecLoader";
+$ShortCut.WindowStyle = 0;
+$ShortCut.Description = "ClearProxy shortcut";
+$ShortCut.Save()
+}
+
+#createshortcut
+function Create-AutoShutdown-Shortcut{
+Write-Output "Create Auto Shutdown Shortcut"
+$Shell = New-Object -ComObject ("WScript.Shell")
+$ShortCut = $Shell.CreateShortcut("$env:USERPROFILE\Desktop\Setup Auto Shutdown.lnk")
+$ShortCut.TargetPath="powershell.exe"
+$ShortCut.Arguments='-ExecutionPolicy Bypass -File "%homepath%\AppData\Roaming\ParsecLoader\CreateAutomaticShutdownScheduledTask.ps1"'
 $ShortCut.WorkingDirectory = "$env:USERPROFILE\AppData\Roaming\ParsecLoader";
 $ShortCut.WindowStyle = 0;
 $ShortCut.Description = "ClearProxy shortcut";
@@ -478,6 +494,7 @@ Write-Host -foregroundcolor cyan "
 
                     OS:
                     Server 2016
+                    Server 2019
                     
                     CLOUD SKU:
                     AWS G3.4xLarge    (Tesla M60)
@@ -485,7 +502,9 @@ Write-Host -foregroundcolor cyan "
                     Azure NV6         (Tesla M60)
                     Paperspace P4000  (Quadro P4000)
                     Paperspace P5000  (Quadro P5000)
-                    Google P100       (Tesla P100)
+                    Google P100 VW    (Tesla P100 Virtual Workstation)
+                    Google P40  VW    (Tesla P40 Virtual Workstation)
+                    Google T40  VW    (Tesla T40 Virtual Workstation)
 
 "   
 setupEnvironment
@@ -503,7 +522,8 @@ show-file-extensions
 enhance-pointer-precision
 set-time
 set-wallpaper
-#Create-ClearProxy-Shortcut
+Create-ClearProxy-Shortcut
+Create-AutoShutdown-Shortcut
 disable-server-manager
 Install-Gaming-Apps
 Start-Sleep -s 5
